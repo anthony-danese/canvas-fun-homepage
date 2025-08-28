@@ -2,14 +2,14 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
-  <title>AP Physics C Electricity and Magnetism - Matter.js Fun</title>
+  <title>AP Physics C: Mechanics and Electricity and Magnetism</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
     html, body {
       margin: 0;
       padding: 0;
       overflow: hidden;
-      background: #fff; /* WHITE BACKGROUND */
+      background: #fff;
       height: 100%;
       width: 100%;
       font-family: 'Comic Sans MS', 'Comic Sans', cursive, sans-serif;
@@ -37,23 +37,16 @@
   </style>
 </head>
 <body>
-  <div class="instructions">Drag and drop the letters! Platforms are fixed.</div>
+  <div class="instructions">Drag and drop the words! Platforms are fixed.</div>
   <div id="canvas-container"></div>
   <!-- Matter.js CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
   <script>
-    // Shortcuts
-    const {Engine, Render, Runner, World, Bodies, Mouse, MouseConstraint, Composite, Body} = Matter;
+    const {Engine, Render, Runner, World, Bodies, Mouse, MouseConstraint, Body} = Matter;
 
-    // Phrases and grouping
-    const topPhrase = "AP Physics C";
-    const bottomPhrase = "Electricity & Magnetism";
-
-    // Colors for letters
-    const colors = [
-      "#ff4e50", "#f9d423", "#24c6dc", "#5433ff", "#fc913a", "#a8e063", "#e94057",
-      "#ffd452", "#43cea2", "#ff6e7f", "#4e54c8", "#dd5e89", "#f7b42c", "#e96443"
-    ];
+    // The two phrases as requested
+    const topText = "AP Physics C: Mechanics";
+    const bottomText = "Electricity and Magnetism";
 
     // Engine and world
     const engine = Engine.create();
@@ -71,7 +64,7 @@
         width: w,
         height: h,
         wireframes: false,
-        background: '#fff' // WHITE BACKGROUND
+        background: '#fff'
       }
     });
 
@@ -81,19 +74,16 @@
     const runner = Runner.create();
     Runner.run(runner, engine);
 
-    // Letter sizing
-    const fontSize = Math.min(64, Math.max(38, Math.floor(w / 20)));
-    const letterSpacing = fontSize * 0.85;
-    const letterRadius = fontSize * 0.7 / 2;
-
-    // Platform positions
-    const marginTop = 60;
-    const spaceBetweenLines = fontSize * 3.2;
+    // Font and word sizing
+    const fontSize = Math.min(68, Math.max(38, Math.floor(w / 15)));
+    const wordPadding = 40;
     const platformWidth = Math.min(w*0.9, 1100);
     const platformOffsetX = (w-platformWidth)/2;
     const platformThickness = 8;
 
     // Platform Y positions
+    const marginTop = 80;
+    const spaceBetweenLines = fontSize * 3.2;
     const topPlatformY = marginTop + fontSize*1.2;
     const bottomPlatformY = topPlatformY + spaceBetweenLines;
 
@@ -114,78 +104,51 @@
     );
     World.add(world, [topPlatform, bottomPlatform]);
 
-    // Create letter bodies for top row
-    let topLetters = [];
-    let topStartX = w/2 - ((topPhrase.replace(/ /g,"").length-1) * letterSpacing) / 2;
-    let letterIndex = 0;
-    for(let i = 0; i < topPhrase.length; i++) {
-      const char = topPhrase[i];
-      if(char === " ") continue; // skip spaces
-
-      const body = Bodies.circle(
-        topStartX + letterIndex * letterSpacing + (Math.random()-0.5)*10, 
-        marginTop,
-        letterRadius,
-        {
-          restitution: 0.8,
-          friction: 0.005,
-          density: 0.002,
-          render: {
-            fillStyle: colors[letterIndex % colors.length],
-            strokeStyle: "#fff",
-            lineWidth: 3,
-            text: {
-              content: char,
-              color: "#222",
-              size: fontSize + "px",
-              fontFamily: "Comic Sans MS, Comic Sans, cursive, sans-serif"
+    // Create word bodies for each phrase
+    // We'll use rectangle bodies for each word
+    function makeWordBodies(phrase, yDrop) {
+      const words = phrase.split(" ");
+      const totalWidth = words.reduce((sum, word) => 
+        sum + word.length * fontSize * 0.6 + wordPadding, 0
+      );
+      let startX = w/2 - totalWidth/2 + fontSize;
+      let bodies = [];
+      for (let i = 0; i < words.length; i++) {
+        const word = words[i];
+        const width = word.length * fontSize * 0.6 + wordPadding;
+        const body = Bodies.rectangle(
+          startX + width/2,
+          yDrop,
+          width,
+          fontSize + 20,
+          {
+            restitution: 0.6,
+            friction: 0.01,
+            density: 0.01,
+            label: "word",
+            render: {
+              fillStyle: "#fff",
+              strokeStyle: "#222",
+              lineWidth: 3,
+              customText: word,
+              textColor: "#222"
             }
           }
-        }
-      );
-      body.label = "letter";
-      body.letter = char;
-      topLetters.push(body);
-      letterIndex++;
+        );
+        body.isWord = true;
+        body.text = word;
+        body.width = width;
+        bodies.push(body);
+        startX += width;
+      }
+      return bodies;
     }
 
-    // Create letter bodies for bottom row
-    let bottomLetters = [];
-    let bottomStartX = w/2 - ((bottomPhrase.replace(/ /g,"").length-1) * letterSpacing) / 2;
-    let bottomLetterIndex = 0;
-    for(let i = 0; i < bottomPhrase.length; i++) {
-      const char = bottomPhrase[i];
-      if(char === " ") continue;
+    // Create bodies for both lines
+    const topWords = makeWordBodies(topText, marginTop);
+    const bottomWords = makeWordBodies(bottomText, bottomPlatformY - fontSize*1.2);
 
-      const body = Bodies.circle(
-        bottomStartX + bottomLetterIndex * letterSpacing + (Math.random()-0.5)*10, 
-        topPlatformY + spaceBetweenLines - fontSize*1.1,
-        letterRadius,
-        {
-          restitution: 0.8,
-          friction: 0.005,
-          density: 0.002,
-          render: {
-            fillStyle: colors[(bottomLetterIndex+7) % colors.length],
-            strokeStyle: "#fff",
-            lineWidth: 3,
-            text: {
-              content: char,
-              color: "#222",
-              size: fontSize + "px",
-              fontFamily: "Comic Sans MS, Comic Sans, cursive, sans-serif"
-            }
-          }
-        }
-      );
-      body.label = "letter";
-      body.letter = char;
-      bottomLetters.push(body);
-      bottomLetterIndex++;
-    }
-
-    // Add letter bodies to world
-    World.add(world, [...topLetters, ...bottomLetters]);
+    World.add(world, [...topWords, ...bottomWords]);
 
     // Floor and walls (to keep things in view)
     const wallThickness = 40;
@@ -196,7 +159,7 @@
       Bodies.rectangle(w+wallThickness/2, h/2, wallThickness, h, {isStatic: true, render:{visible:false}}), // right
     ]);
 
-    // Mouse control: Only let letters be dragged!
+    // Mouse control: Only let words be dragged!
     const mouse = Mouse.create(render.canvas);
     const mouseConstraint = MouseConstraint.create(engine, {
       mouse: mouse,
@@ -204,30 +167,14 @@
         stiffness: 0.3,
         render: {visible: false}
       },
-      // Only allow non-static bodies to be dragged (letters)
       filter: function(body) {
-        return !body.isStatic && body.label === "letter";
+        return body.isWord === true;
       }
     });
-
-    // To ensure only letters are draggable, override the default filter:
-    mouseConstraint.collisionFilter = {
-      group: 0,
-      category: 0x0001,
-      mask: 0xFFFFFFFF
-    };
-    mouseConstraint.body = null;
-
-    // Only allow picking up letter bodies
-    mouseConstraint._mouse.button = function(event, button) {
-      if (button === 0) return true; // left click
-      return false;
-    };
-
     World.add(world, mouseConstraint);
 
-    // Custom drawing of letter text over circles
-    (function renderLetters(){
+    // Custom rendering of words over rectangles
+    (function renderWords(){
       const ctx = render.context;
       ctx.save();
       // Draw platforms as hand-drawn lines
@@ -243,39 +190,39 @@
       ctx.bezierCurveTo(w/3, bottomPlatformY-4, 2*w/3, bottomPlatformY+6, w-platformOffsetX, bottomPlatformY);
       ctx.stroke();
 
-      // Draw all letters (top + bottom)
-      for(const body of [...topLetters, ...bottomLetters]){
+      // Draw all word bodies
+      for(const body of [...topWords, ...bottomWords]){
         const pos = body.position;
         const angle = body.angle;
         ctx.save();
         ctx.translate(pos.x, pos.y);
         ctx.rotate(angle);
 
-        // Draw main circle
+        // Draw rectangle background
         ctx.beginPath();
-        ctx.arc(0, 0, letterRadius, 0, 2*Math.PI);
+        ctx.rect(-body.width/2, -fontSize/2-10, body.width, fontSize+20);
         ctx.closePath();
-        ctx.fillStyle = body.render.fillStyle;
-        ctx.shadowColor = "#222";
-        ctx.shadowBlur = 12;
+        ctx.fillStyle = "#fff";
+        ctx.shadowColor = "#aaa";
+        ctx.shadowBlur = 16;
         ctx.fill();
         ctx.lineWidth = body.render.lineWidth;
         ctx.strokeStyle = body.render.strokeStyle;
         ctx.stroke();
 
-        // Draw letter
-        ctx.font = body.render.text.size + " " + body.render.text.fontFamily;
+        // Draw word text
+        ctx.font = `bold ${fontSize}px 'Comic Sans MS', 'Comic Sans', cursive, sans-serif`;
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
-        ctx.fillStyle = body.render.text.color;
+        ctx.fillStyle = body.render.textColor;
         ctx.shadowColor = "#fff";
         ctx.shadowBlur = 0;
-        ctx.fillText(body.letter, 0, 2);
+        ctx.fillText(body.text, 0, 0);
 
         ctx.restore();
       }
       ctx.restore();
-      window.requestAnimationFrame(renderLetters);
+      window.requestAnimationFrame(renderWords);
     })();
 
     // Resize canvas on window resize
@@ -284,9 +231,9 @@
       render.canvas.height = window.innerHeight;
     });
 
-    // Give letters a little drop animation
+    // Give words a little drop animation
     setTimeout(()=>{
-      [...topLetters, ...bottomLetters].forEach((body, idx) => {
+      [...topWords, ...bottomWords].forEach((body, idx) => {
         Body.applyForce(body, body.position, {
           x: (Math.random()-0.5)*0.04,
           y: Math.random()*0.04
