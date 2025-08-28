@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>AP Physics C Electricity and Magnetism - Matter.js Fun</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    html, body {
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      background: radial-gradient(circle at 60% 40%, #f9d423 0%, #ff4e50 100%);
+      height: 100%;
+      width: 100%;
+      font-family: 'Comic Sans MS', 'Comic Sans', cursive, sans-serif;
+    }
+    #canvas-container {
+      width: 100vw;
+      height: 100vh;
+      position: absolute;
+      top: 0; left: 0;
+    }
+    .header {
+      position: absolute;
+      z-index: 2;
+      width: 100%;
+      text-align: center;
+      top: 24px;
+      color: white;
+      font-size: 2.5rem;
+      text-shadow: 2px 2px 6px #333;
+      pointer-events: none;
+      font-weight: bold;
+      letter-spacing: 0.1em;
+      user-select: none;
+    }
+    .instructions {
+      position: absolute;
+      z-index: 2;
+      width: 100%;
+      text-align: center;
+      top: 70px;
+      color: #fff8;
+      font-size: 1.2rem;
+      pointer-events: none;
+      user-select: none;
+      font-family: inherit;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">AP Physics C Electricity and Magnetism</div>
+  <div class="instructions">Grab and fling the letters around!</div>
+  <div id="canvas-container"></div>
+  <!-- Matter.js CDN -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
+  <script>
+    // Shortcuts
+    const {Engine, Render, Runner, World, Bodies, Mouse, MouseConstraint, Composite, Body} = Matter;
+
+    // The phrase
+    const phrase = "AP Physics C Electricity and Magnetism";
+
+    // Colors for letters
+    const colors = [
+      "#ff4e50", "#f9d423", "#24c6dc", "#5433ff", "#fc913a", "#a8e063", "#e94057",
+      "#ffd452", "#43cea2", "#ff6e7f", "#4e54c8", "#dd5e89", "#f7b42c", "#e96443"
+    ];
+
+    // Engine and world
+    const engine = Engine.create();
+    const world = engine.world;
+
+    // Canvas sizing
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+
+    // Renderer
+    const render = Render.create({
+      element: document.getElementById('canvas-container'),
+      engine: engine,
+      options: {
+        width: w,
+        height: h,
+        wireframes: false,
+        background: 'rgba(0,0,0,0)'
+      }
+    });
+
+    Render.run(render);
+
+    // Runner
+    const runner = Runner.create();
+    Runner.run(runner, engine);
+
+    // Letter sizing and positioning
+    const fontSize = Math.min(64, Math.max(32, Math.floor(w / (phrase.length + 2))));
+    const letterSpacing = fontSize * 0.8;
+    const letterRadius = fontSize * 0.7 / 2;
+
+    // Create letter bodies
+    let xStart = w/2 - ((phrase.length-1) * letterSpacing) / 2;
+    let yStart = h/3;
+    let bodies = [];
+
+    for(let i = 0; i < phrase.length; i++) {
+      const char = phrase[i];
+      if(char === " ") continue; // skip spaces, add a gap
+
+      // Each letter is a circle for physics and draws text
+      const body = Bodies.circle(
+        xStart + i * letterSpacing + (Math.random()-0.5)*10, 
+        yStart + (Math.random()-0.5)*10,
+        letterRadius,
+        {
+          restitution: 0.9,
+          friction: 0.005,
+          density: 0.003,
+          render: {
+            fillStyle: colors[i % colors.length],
+            strokeStyle: "#fff",
+            lineWidth: 3,
+            text: {
+              content: char,
+              color: "#fff",
+              size: fontSize + "px",
+              fontFamily: "Comic Sans MS, Comic Sans, cursive, sans-serif"
+            }
+          }
+        }
+      );
+      body.label = "letter";
+      body.letter = char;
+      bodies.push(body);
+    }
+
+    World.add(world, bodies);
+
+    // Floor, walls, and ceiling
+    const wallThickness = 40;
+    World.add(world, [
+      Bodies.rectangle(w/2, h+wallThickness/2, w, wallThickness, {isStatic: true, render:{visible:false}}), // floor
+      Bodies.rectangle(w/2, -wallThickness/2, w, wallThickness, {isStatic: true, render:{visible:false}}), // ceiling
+      Bodies.rectangle(-wallThickness/2, h/2, wallThickness, h, {isStatic: true, render:{visible:false}}), // left
+      Bodies.rectangle(w+wallThickness/2, h/2, wallThickness, h, {isStatic: true, render:{visible:false}}), // right
+    ]);
+
+    // Mouse control
+    const mouse = Mouse.create(render.canvas);
+    const mouseConstraint = MouseConstraint.create(engine, {
+      mouse: mouse,
+      constraint: {
+        stiffness: 0.3,
+        render: {visible: false}
+      }
+    });
+
+    World.add(world, mouseConstraint);
+
+    // Custom drawing of letter text over circles
+    (function renderLetters(){
+      const ctx = render.context;
+      ctx.save();
+      for(const body of bodies){
+        const pos = body.position;
+        const angle = body.angle;
+        ctx.save();
+        ctx.translate(pos.x, pos.y);
+        ctx.rotate(angle);
+
+        // Draw main circle
+        ctx.beginPath();
+        ctx.arc(0, 0, letterRadius, 0, 2*Math.PI);
+        ctx.closePath();
+        ctx.fillStyle = body.render.fillStyle;
+        ctx.shadowColor = "#222";
+        ctx.shadowBlur = 12;
+        ctx.fill();
+        ctx.lineWidth = body.render.lineWidth;
+        ctx.strokeStyle = body.render.strokeStyle;
+        ctx.stroke();
+
+        // Draw letter
+        ctx.font = body.render.text.size + " " + body.render.text.fontFamily;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillStyle = body.render.text.color;
+        ctx.shadowColor = "#fff";
+        ctx.shadowBlur = 0;
+        ctx.fillText(body.letter, 0, 2);
+
+        ctx.restore();
+      }
+      ctx.restore();
+      window.requestAnimationFrame(renderLetters);
+    })();
+
+    // Resize canvas on window resize
+    window.addEventListener('resize', () => {
+      render.canvas.width = window.innerWidth;
+      render.canvas.height = window.innerHeight;
+    });
+
+    // Add a little bounce to start
+    setTimeout(()=>{
+      bodies.forEach((body, idx) => {
+        Body.applyForce(body, body.position, {
+          x: (Math.random()-0.5)*0.06,
+          y: -Math.random()*0.08
+        });
+      });
+    }, 700);
+
+    // For mobile, make sure canvas is full screen
+    render.canvas.style.position = "absolute";
+    render.canvas.style.top = "0";
+    render.canvas.style.left = "0";
+    render.canvas.style.width = "100vw";
+    render.canvas.style.height = "100vh";
+  </script>
+</body>
+</html>
