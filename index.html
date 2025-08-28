@@ -9,7 +9,7 @@
       margin: 0;
       padding: 0;
       overflow: hidden;
-      background: radial-gradient(circle at 60% 40%, #f9d423 0%, #ff4e50 100%);
+      background: #fff;
       height: 100%;
       width: 100%;
       font-family: 'Comic Sans MS', 'Comic Sans', cursive, sans-serif;
@@ -20,37 +20,24 @@
       position: absolute;
       top: 0; left: 0;
     }
-    .header {
-      position: absolute;
-      z-index: 2;
-      width: 100%;
-      text-align: center;
-      top: 24px;
-      color: white;
-      font-size: 2.5rem;
-      text-shadow: 2px 2px 6px #333;
-      pointer-events: none;
-      font-weight: bold;
-      letter-spacing: 0.1em;
-      user-select: none;
-    }
     .instructions {
       position: absolute;
       z-index: 2;
       width: 100%;
       text-align: center;
-      top: 70px;
-      color: #fff8;
+      top: 16px;
+      color: #222;
       font-size: 1.2rem;
       pointer-events: none;
       user-select: none;
       font-family: inherit;
+      font-weight: bold;
+      letter-spacing: 0.04em;
     }
   </style>
 </head>
 <body>
-  <div class="header">AP Physics C Electricity and Magnetism</div>
-  <div class="instructions">Grab and fling the letters around!</div>
+  <div class="instructions">Drag and drop the letters! Platforms are fixed.</div>
   <div id="canvas-container"></div>
   <!-- Matter.js CDN -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.19.0/matter.min.js"></script>
@@ -58,8 +45,9 @@
     // Shortcuts
     const {Engine, Render, Runner, World, Bodies, Mouse, MouseConstraint, Composite, Body} = Matter;
 
-    // The phrase
-    const phrase = "AP Physics C Electricity and Magnetism";
+    // Phrases and grouping
+    const topPhrase = "AP Physics C";
+    const bottomPhrase = "Electricity & Magnetism";
 
     // Colors for letters
     const colors = [
@@ -93,36 +81,62 @@
     const runner = Runner.create();
     Runner.run(runner, engine);
 
-    // Letter sizing and positioning
-    const fontSize = Math.min(64, Math.max(32, Math.floor(w / (phrase.length + 2))));
-    const letterSpacing = fontSize * 0.8;
+    // Letter sizing
+    const fontSize = Math.min(64, Math.max(38, Math.floor(w / 20)));
+    const letterSpacing = fontSize * 0.85;
     const letterRadius = fontSize * 0.7 / 2;
 
-    // Create letter bodies
-    let xStart = w/2 - ((phrase.length-1) * letterSpacing) / 2;
-    let yStart = h/3;
-    let bodies = [];
+    // Platform positions
+    const marginTop = 60;
+    const spaceBetweenLines = fontSize * 3.2;
+    const platformWidth = Math.min(w*0.9, 1100);
+    const platformOffsetX = (w-platformWidth)/2;
+    const platformThickness = 8;
 
-    for(let i = 0; i < phrase.length; i++) {
-      const char = phrase[i];
-      if(char === " ") continue; // skip spaces, add a gap
+    // Platform Y positions
+    const topPlatformY = marginTop + fontSize*1.2;
+    const bottomPlatformY = topPlatformY + spaceBetweenLines;
 
-      // Each letter is a circle for physics and draws text
+    // Add platforms (static lines)
+    const topPlatform = Bodies.rectangle(
+      w/2, topPlatformY, platformWidth, platformThickness,
+      { isStatic: true, 
+        friction: 0.1,
+        render: { fillStyle: "#333" }
+      }
+    );
+    const bottomPlatform = Bodies.rectangle(
+      w/2, bottomPlatformY, platformWidth, platformThickness,
+      { isStatic: true, 
+        friction: 0.1,
+        render: { fillStyle: "#333" }
+      }
+    );
+    World.add(world, [topPlatform, bottomPlatform]);
+
+    // Create letter bodies for top row
+    let topLetters = [];
+    let topStartX = w/2 - ((topPhrase.replace(/ /g,"").length-1) * letterSpacing) / 2;
+    let letterIndex = 0;
+    for(let i = 0; i < topPhrase.length; i++) {
+      const char = topPhrase[i];
+      if(char === " ") continue; // skip spaces
+
       const body = Bodies.circle(
-        xStart + i * letterSpacing + (Math.random()-0.5)*10, 
-        yStart + (Math.random()-0.5)*10,
+        topStartX + letterIndex * letterSpacing + (Math.random()-0.5)*10, 
+        marginTop,
         letterRadius,
         {
-          restitution: 0.9,
+          restitution: 0.8,
           friction: 0.005,
-          density: 0.003,
+          density: 0.002,
           render: {
-            fillStyle: colors[i % colors.length],
+            fillStyle: colors[letterIndex % colors.length],
             strokeStyle: "#fff",
             lineWidth: 3,
             text: {
               content: char,
-              color: "#fff",
+              color: "#222",
               size: fontSize + "px",
               fontFamily: "Comic Sans MS, Comic Sans, cursive, sans-serif"
             }
@@ -131,12 +145,49 @@
       );
       body.label = "letter";
       body.letter = char;
-      bodies.push(body);
+      topLetters.push(body);
+      letterIndex++;
     }
 
-    World.add(world, bodies);
+    // Create letter bodies for bottom row
+    let bottomLetters = [];
+    let bottomStartX = w/2 - ((bottomPhrase.replace(/ /g,"").length-1) * letterSpacing) / 2;
+    let bottomLetterIndex = 0;
+    for(let i = 0; i < bottomPhrase.length; i++) {
+      const char = bottomPhrase[i];
+      if(char === " ") continue;
 
-    // Floor, walls, and ceiling
+      const body = Bodies.circle(
+        bottomStartX + bottomLetterIndex * letterSpacing + (Math.random()-0.5)*10, 
+        topPlatformY + spaceBetweenLines - fontSize*1.1,
+        letterRadius,
+        {
+          restitution: 0.8,
+          friction: 0.005,
+          density: 0.002,
+          render: {
+            fillStyle: colors[(bottomLetterIndex+7) % colors.length],
+            strokeStyle: "#fff",
+            lineWidth: 3,
+            text: {
+              content: char,
+              color: "#222",
+              size: fontSize + "px",
+              fontFamily: "Comic Sans MS, Comic Sans, cursive, sans-serif"
+            }
+          }
+        }
+      );
+      body.label = "letter";
+      body.letter = char;
+      bottomLetters.push(body);
+      bottomLetterIndex++;
+    }
+
+    // Add letter bodies to world
+    World.add(world, [...topLetters, ...bottomLetters]);
+
+    // Floor and walls (to keep things in view)
     const wallThickness = 40;
     World.add(world, [
       Bodies.rectangle(w/2, h+wallThickness/2, w, wallThickness, {isStatic: true, render:{visible:false}}), // floor
@@ -145,15 +196,33 @@
       Bodies.rectangle(w+wallThickness/2, h/2, wallThickness, h, {isStatic: true, render:{visible:false}}), // right
     ]);
 
-    // Mouse control
+    // Mouse control: Only let letters be dragged!
     const mouse = Mouse.create(render.canvas);
     const mouseConstraint = MouseConstraint.create(engine, {
       mouse: mouse,
       constraint: {
         stiffness: 0.3,
         render: {visible: false}
+      },
+      // Only allow non-static bodies to be dragged (letters)
+      filter: function(body) {
+        return !body.isStatic && body.label === "letter";
       }
     });
+
+    // To ensure only letters are draggable, override the default filter:
+    mouseConstraint.collisionFilter = {
+      group: 0,
+      category: 0x0001,
+      mask: 0xFFFFFFFF
+    };
+    mouseConstraint.body = null;
+
+    // Only allow picking up letter bodies
+    mouseConstraint._mouse.button = function(event, button) {
+      if (button === 0) return true; // left click
+      return false;
+    };
 
     World.add(world, mouseConstraint);
 
@@ -161,7 +230,21 @@
     (function renderLetters(){
       const ctx = render.context;
       ctx.save();
-      for(const body of bodies){
+      // Draw platforms as hand-drawn lines
+      ctx.strokeStyle = "#333";
+      ctx.lineWidth = platformThickness;
+      ctx.beginPath();
+      ctx.moveTo(platformOffsetX, topPlatformY);
+      ctx.bezierCurveTo(w/3, topPlatformY-8, 2*w/3, topPlatformY+8, w-platformOffsetX, topPlatformY);
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(platformOffsetX, bottomPlatformY);
+      ctx.bezierCurveTo(w/3, bottomPlatformY-4, 2*w/3, bottomPlatformY+6, w-platformOffsetX, bottomPlatformY);
+      ctx.stroke();
+
+      // Draw all letters (top + bottom)
+      for(const body of [...topLetters, ...bottomLetters]){
         const pos = body.position;
         const angle = body.angle;
         ctx.save();
@@ -201,15 +284,15 @@
       render.canvas.height = window.innerHeight;
     });
 
-    // Add a little bounce to start
+    // Give letters a little drop animation
     setTimeout(()=>{
-      bodies.forEach((body, idx) => {
+      [...topLetters, ...bottomLetters].forEach((body, idx) => {
         Body.applyForce(body, body.position, {
-          x: (Math.random()-0.5)*0.06,
-          y: -Math.random()*0.08
+          x: (Math.random()-0.5)*0.04,
+          y: Math.random()*0.04
         });
       });
-    }, 700);
+    }, 500);
 
     // For mobile, make sure canvas is full screen
     render.canvas.style.position = "absolute";
