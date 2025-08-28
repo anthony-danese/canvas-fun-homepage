@@ -53,7 +53,7 @@
     const ceiling = Bodies.rectangle(width / 2, -30, width + 100, 60, { isStatic: true });
     Composite.add(engine.world, [ground, leftWall, rightWall, ceiling]);
 
-    // Platform lines (static bodies)
+    // Platform lines (static bodies) - now visible!
     let lines = [
         { text: "AP Physics C", y: 100 },
         { text: "Mechanics and", y: 200 },
@@ -63,14 +63,22 @@
     let lineX = width / 2;
     let lineWidth = Math.min(width * 0.8, 1200);
 
+    // Add visible platforms
+    let platformThickness = 10;
     lines.forEach((line, i) => {
-        // Create static platform beneath the text
         let platform = Bodies.rectangle(
             lineX,
-            line.y + 25,       // y-position of the horizontal line
+            line.y + 25,        // y-position of the horizontal line
             lineWidth,
-            10,                // Thickness of the line
-            { isStatic: true, render: { fillStyle: "#222" } }
+            platformThickness,  // Thickness of the line
+            {
+                isStatic: true,
+                render: {
+                    fillStyle: "#222",
+                    strokeStyle: "#222",
+                    lineWidth: platformThickness
+                }
+            }
         );
         Composite.add(engine.world, platform);
     });
