@@ -6,7 +6,7 @@
   <title>Matter.js Bouncing Interactive Letters</title>
   <style>
     body { margin: 0; padding: 0; overflow: hidden; background: #fff; }
-    canvas { display: block; border: none; outline: none; } /* no browser border */
+    canvas { display: block; border: none; outline: none; }
   </style>
 </head>
 <body>
@@ -66,7 +66,6 @@
     const ctx2 = canvas.getContext("2d");
     ctx2.font = "bold " + size + "px " + family;
     ctx2.textBaseline = "alphabetic";
-    // soft outline for contrast
     ctx2.lineWidth = Math.max(1, size / 18);
     ctx2.strokeStyle = "rgba(0,0,0,0.18)";
     ctx2.strokeText(text, 0, size * 0.82);
@@ -79,7 +78,6 @@
     if (letter === ' ') return null;
     const color = getRandomColor();
 
-    // measure width for the physics body
     const tempCanvas = document.createElement("canvas");
     const tempCtx = tempCanvas.getContext("2d");
     tempCtx.font = "bold " + size + "px " + font;
@@ -99,7 +97,7 @@
       }
     });
 
-    // lively feel
+    // small spin & random angle
     Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.4);
     Body.setAngle(body, (Math.random() - 0.5) * 0.2);
 
@@ -113,8 +111,8 @@
   // "iSTEM" - STEM first, then "i"
   let text = "iSTEM";
   let letters = text.split('');
-  let stemLetters = letters.slice(1); // ['S','T','E','M']
-  let iLetter = letters[0]; // 'i'
+  let stemLetters = letters.slice(1);
+  let iLetter = letters[0];
 
   let lineX = width / 2;
   let lineY = height / 2;
@@ -123,17 +121,15 @@
   let y = lineY - 70;
 
   // Add STEM letters immediately
-  let stemBodies = [];
   stemLetters.forEach((char, idx) => {
     let x = startX + idx * letterSpacing;
     let letterBody = createLetter(char, x, y, fontSize);
-    stemBodies.push(letterBody);
     if (letterBody) Composite.add(engine.world, letterBody);
   });
 
   // Add "i" after 2 seconds
   setTimeout(() => {
-    let iX = lineX - (totalWidth / 2) - letterSpacing; // left of STEM
+    let iX = lineX - (totalWidth / 2) - letterSpacing;
     let iBody = createLetter(iLetter, iX, y, fontSize);
     if (iBody) Composite.add(engine.world, iBody);
   }, 2000);
@@ -147,7 +143,7 @@
   Composite.add(engine.world, mouseConstraint);
   render.mouse = mouse;
 
-  // ----- Trails (subtle afterglow) -----
+  // ----- Trails -----
   const ctx = render.context;
   Events.on(render, 'afterRender', () => {
     ctx.save();
@@ -164,58 +160,12 @@
     ctx.restore();
   });
 
-  // ----- Confetti on hard ground hits -----
-  function spawnSparks(x, y, count = 12) {
-    const sparks = [];
-    for (let i = 0; i < count; i++) {
-      const r = 3 + Math.random() * 3;
-      const spark = Bodies.circle(x, y, r, {
-        restitution: 0.6,
-        frictionAir: 0.035,
-        render: { fillStyle: getRandomColor() }
-      });
-      const angle = Math.random() * Math.PI; // upward-ish
-      const speed = 6 + Math.random() * 6;
-      Body.setVelocity(spark, {
-        x: (Math.random() < 0.5 ? -1 : 1) * Math.cos(angle) * speed,
-        y: -Math.sin(angle) * speed
-      });
-      sparks.push(spark);
-    }
-    Composite.add(engine.world, sparks);
-    setTimeout(() => {
-      sparks.forEach(s => Composite.remove(engine.world, s));
-    }, 1500);
-  }
-
-  Events.on(engine, 'collisionStart', (e) => {
-    e.pairs.forEach(({ bodyA, bodyB }) => {
-      const a = bodyA, b = bodyB;
-      const ground = (a.label === 'groundLine') ? a : (b.label === 'groundLine') ? b : null;
-      const other = ground ? (ground === a ? b : a) : null;
-      if (ground && other && other.speed > 6) {
-        spawnSparks(other.position.x, ground.position.y - 6);
-      }
-    });
-  });
-
-  // ----- Colorful pegs (one rotating) -----
-  const pegs = [
-    Bodies.circle(width*0.45, height*0.55, 12, { isStatic: true, render:{ fillStyle: getRandomColor() } }),
-    Bodies.circle(width*0.55, height*0.45, 12, { isStatic: true, render:{ fillStyle: getRandomColor() } }),
-    Bodies.rectangle(width*0.50, height*0.35, 120, 10, { isStatic: true, render:{ fillStyle: getRandomColor() } })
-  ];
-  Composite.add(engine.world, pegs);
-  Events.on(engine, 'beforeUpdate', () => {
-    Body.rotate(pegs[2], 0.01); // gentle spin
-  });
-
-  // ----- Keyboard controls -----
-  let gx = 0, gy = 1; // gravity vector
+  // ----- Keyboard tilt -----
+  let gx = 0, gy = 1;
   document.addEventListener("keydown", function(event) {
     const key = event.key.toLowerCase();
+    const step = 0.2;
     if (key === 'g') {
-      // toggle on/off
       if (engine.world.gravity.y === 0 && engine.world.gravity.x === 0) {
         engine.world.gravity.x = gx; engine.world.gravity.y = gy;
       } else {
@@ -223,12 +173,11 @@
         engine.world.gravity.x = 0; engine.world.gravity.y = 0;
       }
     }
-    const step = 0.2;
     if (event.key === 'ArrowLeft')  gx -= step;
     if (event.key === 'ArrowRight') gx += step;
     if (event.key === 'ArrowUp')    gy -= step;
     if (event.key === 'ArrowDown')  gy += step;
-    if (key === '0') { gx = 0; gy = 1; } // reset
+    if (key === '0') { gx = 0; gy = 1; }
     engine.world.gravity.x = Math.max(-1, Math.min(1, gx));
     engine.world.gravity.y = Math.max(-1, Math.min(1, gy));
   });
