@@ -53,27 +53,7 @@
     const ceiling = Bodies.rectangle(width / 2, -30, width + 100, 60, { isStatic: true });
     Composite.add(engine.world, [ground, leftWall, rightWall, ceiling]);
 
-    // Platform for iSTEM
-    let lineY = height * 0.3;
-    let lineX = width / 2;
-    let lineWidth = Math.min(width * 0.8, 1200);
-    let platformThickness = 10;
 
-    let platform = Bodies.rectangle(
-        lineX,
-        lineY + 25,
-        lineWidth,
-        platformThickness,
-        {
-            isStatic: true,
-            render: {
-                fillStyle: "#222",
-                strokeStyle: "#222",
-                lineWidth: platformThickness
-            }
-        }
-    );
-    Composite.add(engine.world, platform);
 
     // Utility functions
     function getRandomColor() {
