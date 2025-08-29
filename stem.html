@@ -74,6 +74,25 @@ Matter.Events.on(render, 'afterRender', () => {
   const h = Math.floor(Math.random() * 360);
   return `hsl(${h} 90% 55%)`;
 }
+
+    function spawnSparks(x, y, count = 12) {
+  const sparks = [];
+  for (let i = 0; i < count; i++) {
+    const r = 3 + Math.random() * 3;
+    const spark = Bodies.circle(x, y, r, {
+      restitution: 0.6,
+      frictionAir: 0.035,
+      render: { fillStyle: getRandomColor() }
+    });
+    const angle = Math.random() * Math.PI;      // upward-ish
+    const speed = 6 + Math.random() * 6;
+    Matter.Body.setVelocity(spark, { x: Math.cos(angle) * speed * (Math.random() < 0.5 ? -1 : 1), y: -Math.sin(angle) * speed });
+    sparks.push(spark);
+  }
+  Composite.add(engine.world, sparks);
+  // auto-remove after 1.5s
+  setTimeout(() => Composite.remove(engine.world, sparks), 1500);
+}
     function createTextTexture(text, color, size, family) {
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d");
