@@ -116,7 +116,7 @@
 
     // Add "i" after a few seconds (e.g., 2 seconds)
     setTimeout(() => {
-        let iX = lineX - (totalWidth / 2) - letterSpacing-5; // Place to left of STEM
+        let iX = lineX - (totalWidth / 2) - letterSpacing-500; // Place to left of STEM
         let iBody = createLetter(iLetter, iX, y, fontSize);
         if (iBody) Composite.add(engine.world, iBody);
     }, 2000);
