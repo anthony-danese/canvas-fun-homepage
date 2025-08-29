@@ -122,14 +122,14 @@
 
   // Add STEM letters immediately
   stemLetters.forEach((char, idx) => {
-    let x = startX + idx * letterSpacing-10;
+    let x = startX + idx * letterSpacing;
     let letterBody = createLetter(char, x, y, fontSize);
     if (letterBody) Composite.add(engine.world, letterBody);
   });
 
   // Add "i" after 2 seconds
   setTimeout(() => {
-    let iX = lineX - (totalWidth / 2) - letterSpacing;
+    let iX = lineX - (totalWidth / 2) - letterSpacing-10;
     let iBody = createLetter(iLetter, iX, y, fontSize);
     if (iBody) Composite.add(engine.world, iBody);
   }, 2000);
