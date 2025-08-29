@@ -68,7 +68,7 @@
         ctx.fillText(text, 0, size * 0.8);
         return canvas.toDataURL("image/png");
     }
-    function createLetter(letter, x, y, size=64, font="Arial, sans-serif") {
+    function createLetter(letter, x, y, size=100, font="Arial, sans-serif") {
         if (letter === ' ') return null;
         const color = getRandomColor();
         const tempCanvas = document.createElement("canvas");
@@ -91,7 +91,7 @@
 
     // Spacing and font
     let letterSpacing = 48;
-    let fontSize = 64;
+    let fontSize = 100;
 
     // "iSTEM" - STEM first, then "i"
     let text = "iSTEM";
