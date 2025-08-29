@@ -35,6 +35,23 @@
     Render.run(render);
     Runner.run(Runner.create(), engine);
 
+    const ctx = render.context;
+Matter.Events.on(render, 'afterRender', () => {
+  ctx.save();
+  ctx.globalAlpha = 0.12; // trail strength
+  engine.world.bodies.forEach(b => {
+    if (b.render.sprite && b.render.sprite.texture) {
+      // draw a soft circle at the body's position
+      ctx.beginPath();
+      ctx.arc(b.position.x, b.position.y, Math.max(4, b.bounds.max.x - b.bounds.min.x) * 0.08, 0, Math.PI * 2);
+      ctx.fillStyle = 'rgba(0,0,0,0.6)';
+      ctx.fill();
+    }
+  });
+  ctx.restore();
+});
+
+
     // Boundaries (no visible ground/platform)
     const width = render.options.width;
     const height = render.options.height;
