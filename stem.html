@@ -122,7 +122,7 @@
 
   // Add STEM letters immediately
   stemLetters.forEach((char, idx) => {
-    let x = startX + idx * letterSpacing;
+    let x = startX + idx * letterSpacing-10;
     let letterBody = createLetter(char, x, y, fontSize);
     if (letterBody) Composite.add(engine.world, letterBody);
   });
