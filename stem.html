@@ -5,21 +5,13 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Matter.js Bouncing Interactive Letters</title>
     <style>
-        body {
-            margin: 0;
-            padding: 0;
-            overflow: hidden;
-            background-color: #ffffff;
-        }
-        canvas {
-            display: block;
-        }
+        body { margin: 0; padding: 0; overflow: hidden; background: #fff; }
+        canvas { display: block; }
     </style>
 </head>
 <body>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.17.1/matter.min.js"></script>
 <script>
-    // Matter.js aliases
     const Engine = Matter.Engine,
           Render = Matter.Render,
           Runner = Matter.Runner,
@@ -28,7 +20,6 @@
           Mouse = Matter.Mouse,
           MouseConstraint = Matter.MouseConstraint;
 
-    // Create engine and renderer
     const engine = Engine.create();
     const render = Render.create({
         element: document.body,
@@ -44,22 +35,27 @@
     Render.run(render);
     Runner.run(Runner.create(), engine);
 
-    // Boundaries
+    // Boundaries (no visible ground/platform)
     const width = render.options.width;
     const height = render.options.height;
-    const ground = Bodies.rectangle(width / 2, height + 30, width + 100, 60, { isStatic: true });
+
+    // Invisible ground (objects bounce, but no platform is shown)
+    const invisibleGround = Bodies.rectangle(width / 2, height + 30, width + 100, 60, { 
+        isStatic: true, 
+        render: { visible: false }
+    });
+
     const leftWall = Bodies.rectangle(-30, height / 2, 60, height, { isStatic: true });
     const rightWall = Bodies.rectangle(width + 30, height / 2, 60, height, { isStatic: true });
     const ceiling = Bodies.rectangle(width / 2, -30, width + 100, 60, { isStatic: true });
-    Composite.add(engine.world, [ground, leftWall, rightWall, ceiling]);
 
-
+    // Only add invisible ground, left/right walls, and ceiling
+    Composite.add(engine.world, [invisibleGround, leftWall, rightWall, ceiling]);
 
     // Utility functions
     function getRandomColor() {
         return '#' + Math.floor(Math.random()*16777215).toString(16).padStart(6, '0');
     }
-
     function createTextTexture(text, color, size, family) {
         const canvas = document.createElement("canvas");
         const ctx = canvas.getContext("2d");
@@ -72,7 +68,6 @@
         ctx.fillText(text, 0, size * 0.8);
         return canvas.toDataURL("image/png");
     }
-
     function createLetter(letter, x, y, size=64, font="Arial, sans-serif") {
         if (letter === ' ') return null;
         const color = getRandomColor();
@@ -103,6 +98,9 @@
     let letters = text.split('');
     let stemLetters = letters.slice(1); // ['S','T','E','M']
     let iLetter = letters[0]; // 'i'
+
+    let lineX = width / 2;
+    let lineY = height / 2;
     let totalWidth = (stemLetters.length - 1) * letterSpacing;
     let startX = lineX - totalWidth / 2;
     let y = lineY - 70;
