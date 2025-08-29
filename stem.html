@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Matter.js Bouncing Interactive Letters</title>
+  <title>Matter.js — iSTEM over Mr. Danese</title>
   <style>
     body { margin: 0; padding: 0; overflow: hidden; background: #fff; }
     canvas { display: block; border: none; outline: none; }
@@ -12,12 +12,9 @@
 <body>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/matter-js/0.17.1/matter.min.js"></script>
 <script>
-  const {
-    Engine, Render, Runner, Bodies, Body, Composite,
-    Mouse, MouseConstraint, Events
-  } = Matter;
+  const { Engine, Render, Runner, Bodies, Body, Composite, Mouse, MouseConstraint, Events } = Matter;
 
-  // ----- Engine & render -----
+  // --- Engine & Renderer ---
   const engine = Engine.create();
   const render = Render.create({
     element: document.body,
@@ -29,112 +26,126 @@
       background: '#ffffff'
     }
   });
-
   Render.run(render);
-  const runner = Runner.create();
-  Runner.run(runner, engine);
+  Runner.run(Runner.create(), engine);
 
-  const width = render.options.width;
-  const height = render.options.height;
+  const W = render.options.width;
+  const H = render.options.height;
 
-  // ----- World bounds -----
-  const groundLine = Bodies.rectangle(width / 2, height - 2, width + 120, 6, {
+  // --- Floors / Walls ---
+  const ground = Bodies.rectangle(W/2, H - 2, W + 160, 6, { isStatic: true, render: { fillStyle: '#000' }});
+  ground.label = 'ground';
+
+  // Upper floor (platform) ABOVE the name
+  const floorY = Math.round(H * 0.55); // adjust if you want higher/lower
+  const upperFloor = Bodies.rectangle(W/2, floorY, Math.min(W * 0.8, 900), 8, {
     isStatic: true,
-    render: { fillStyle: '#000000' }
+    render: { fillStyle: '#111' }
   });
-  groundLine.label = 'groundLine';
+  upperFloor.label = 'upperFloor';
 
-  const leftWall  = Bodies.rectangle(-30, height / 2, 60, height + 120, { isStatic: true, render:{visible:false} });
-  const rightWall = Bodies.rectangle(width + 30, height / 2, 60, height + 120, { isStatic: true, render:{visible:false} });
-  const ceiling   = Bodies.rectangle(width / 2, -30, width + 120, 60, { isStatic: true, render:{visible:false} });
+  const leftWall  = Bodies.rectangle(-40, H/2, 80, H + 200, { isStatic: true, render:{visible:false} });
+  const rightWall = Bodies.rectangle(W + 40, H/2, 80, H + 200, { isStatic: true, render:{visible:false} });
+  const ceiling   = Bodies.rectangle(W/2, -40, W + 200, 80, { isStatic: true, render:{visible:false} });
 
-  Composite.add(engine.world, [groundLine, leftWall, rightWall, ceiling]);
+  Composite.add(engine.world, [ground, upperFloor, leftWall, rightWall, ceiling]);
 
-  // ----- Utilities -----
-  function getRandomColor() {
+  // --- Utilities ---
+  function randColor() {
     const h = Math.floor(Math.random() * 360);
     return `hsl(${h} 90% 55%)`;
   }
 
-  function createTextTexture(text, color, size, family) {
-    const canvas = document.createElement("canvas");
-    const ctx = canvas.getContext("2d");
-    ctx.font = "bold " + size + "px " + family;
-    const textWidth = ctx.measureText(text).width;
-    canvas.width = Math.max(1, Math.ceil(textWidth));
-    canvas.height = Math.max(1, Math.ceil(size * 1.1));
-    const ctx2 = canvas.getContext("2d");
-    ctx2.font = "bold " + size + "px " + family;
-    ctx2.textBaseline = "alphabetic";
-    ctx2.lineWidth = Math.max(1, size / 18);
-    ctx2.strokeStyle = "rgba(0,0,0,0.18)";
-    ctx2.strokeText(text, 0, size * 0.82);
-    ctx2.fillStyle = color;
-    ctx2.fillText(text, 0, size * 0.82);
-    return canvas.toDataURL("image/png");
+  function textTexture(text, color, size, family) {
+    const cnv = document.createElement('canvas');
+    const ctx = cnv.getContext('2d');
+    ctx.font = `bold ${size}px ${family}`;
+    const w = Math.max(1, Math.ceil(ctx.measureText(text).width));
+    const h = Math.max(1, Math.ceil(size * 1.1));
+    cnv.width = w; cnv.height = h;
+    const c2 = cnv.getContext('2d');
+    c2.font = `bold ${size}px ${family}`;
+    c2.textBaseline = 'alphabetic';
+    c2.lineWidth = Math.max(1, size/18);
+    c2.strokeStyle = 'rgba(0,0,0,0.18)';
+    c2.strokeText(text, 0, size*0.82);
+    c2.fillStyle = color;
+    c2.fillText(text, 0, size*0.82);
+    return cnv.toDataURL('image/png');
   }
 
-  function createLetter(letter, x, y, size=100, font="Arial, sans-serif") {
+  function createLetter(letter, x, y, size=100, font='Arial, sans-serif') {
     if (letter === ' ') return null;
-    const color = getRandomColor();
-
-    const tempCanvas = document.createElement("canvas");
-    const tempCtx = tempCanvas.getContext("2d");
-    tempCtx.font = "bold " + size + "px " + font;
-    const textWidth = tempCtx.measureText(letter).width;
-    const textHeight = size;
-
-    const body = Bodies.rectangle(x, y, textWidth, textHeight, {
+    const color = randColor();
+    const tmp = document.createElement('canvas').getContext('2d');
+    tmp.font = `bold ${size}px ${font}`;
+    const w = tmp.measureText(letter).width;
+    const body = Bodies.rectangle(x, y, w, size, {
       restitution: 0.9,
       friction: 0.2,
       frictionAir: 0.01,
-      render: {
-        sprite: {
-          texture: createTextTexture(letter, color, size, font),
-          xScale: 1,
-          yScale: 1
-        }
-      }
+      render: { sprite: { texture: textTexture(letter, color, size, font) } }
     });
-
-    // small spin & random angle
-    //Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.4);
-   //Body.setAngle(body, (Math.random() - 0.5) * 0.2);
-
+    Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.4);
+    Body.setAngle(body, (Math.random() - 0.5) * 0.2);
     return body;
   }
 
-  // Spacing and font
-  let letterSpacing = 48;
-  let fontSize = 100;
+  // measure total width of a word (for alignment & placing the 'i')
+  function measureWord(word, size=100, font='Arial, sans-serif', spacing=20) {
+    const ctx = document.createElement('canvas').getContext('2d');
+    ctx.font = `bold ${size}px ${font}`;
+    const letters = [...word];
+    const widths = letters.map(ch => ch === ' ' ? size*0.4 : ctx.measureText(ch).width);
+    const total = widths.reduce((a,b)=>a+b,0) + spacing*(letters.length-1);
+    const widthOf = (ch) => ch === ' ' ? size*0.4 : ctx.measureText(ch).width;
+    return { total, widthOf };
+  }
 
-  // "iSTEM" - STEM first, then "i"
-  let text = "iSTEM";
-  let letters = text.split('');
-  let stemLetters = letters.slice(1);
-  let iLetter = letters[0];
+  // drop a word centered at (cx, yDrop). Letters will fall to whichever floor is below.
+  function dropWord(word, cx, yDrop, size=100, font='Arial, sans-serif', spacing=20) {
+    const ctx = document.createElement('canvas').getContext('2d');
+    ctx.font = `bold ${size}px ${font}`;
+    const letters = [...word];
+    const widths = letters.map(ch => ch === ' ' ? size*0.4 : ctx.measureText(ch).width);
+    const total = widths.reduce((a,b)=>a+b,0) + spacing*(letters.length-1);
+    let cursor = cx - total/2;
+    const bodies = [];
+    letters.forEach((ch, i) => {
+      const w = widths[i];
+      const bx = cursor + w/2;
+      const b = createLetter(ch, bx, yDrop, size, font);
+      if (b) { Composite.add(engine.world, b); bodies.push(b); }
+      cursor += w + spacing;
+    });
+    return bodies;
+  }
 
-  let lineX = width / 2;
-  let lineY = height / 2;
-  let totalWidth = (stemLetters.length - 1) * letterSpacing;
-  let startX = lineX - totalWidth / 2;
-  let y = lineY - 70;
+  // --- DROP SEQUENCE ---
+  // 1) Your name drops from near the top and lands on the bottom ground
+  dropWord('Mr. Danese', W/2, 120); // start high; will fall to ground
 
-  // Add STEM letters immediately
-  stemLetters.forEach((char, idx) => {
-    let x = startX + idx * letterSpacing;
-    let letterBody = createLetter(char, x, y, fontSize);
-    if (letterBody) Composite.add(engine.world, letterBody);
-  });
+  // 2) STEM drops later onto the upper floor
+  const STEM_SIZE = 100;
+  const STEM_SPACING = 20;
+  const { total: stemTotal, widthOf } = measureWord('STEM', STEM_SIZE, 'Arial, sans-serif', STEM_SPACING);
 
-  // Add "i" after 2 seconds
   setTimeout(() => {
-    let iX = lineX - (totalWidth / 2) - letterSpacing-10;
-    let iBody = createLetter(iLetter, iX, y, fontSize);
-    if (iBody) Composite.add(engine.world, iBody);
-  }, 2000);
+    // Drop STEM above the platform so it lands on it
+    const stemCenterX = W/2;
+    dropWord('STEM', stemCenterX, floorY - 200, STEM_SIZE, 'Arial, sans-serif', STEM_SPACING);
 
-  // ----- Mouse -----
+    // 3) After a few seconds, drop the 'i' to the left of STEM, same style as before
+    setTimeout(() => {
+      const iWidth = widthOf('i');
+      const spacing = STEM_SPACING;
+      const startX = stemCenterX - stemTotal/2; // left edge where STEM starts
+      const iCenterX = startX - spacing - iWidth/2; // just to the left of STEM with same spacing
+      dropWord('i', iCenterX, floorY - 200, STEM_SIZE, 'Arial, sans-serif', STEM_SPACING);
+    }, 2000);
+  }, 1500);
+
+  // --- Mouse drag ---
   const mouse = Mouse.create(render.canvas);
   const mouseConstraint = MouseConstraint.create(engine, {
     mouse,
@@ -143,46 +154,46 @@
   Composite.add(engine.world, mouseConstraint);
   render.mouse = mouse;
 
-  // ----- Trails -----
-  const ctx = render.context;
+  // --- Subtle Trails ---
+  const ctx2d = render.context;
   Events.on(render, 'afterRender', () => {
-    ctx.save();
-    ctx.globalAlpha = 0.12;
+    ctx2d.save();
+    ctx2d.globalAlpha = 0.12;
     engine.world.bodies.forEach(b => {
       if (b.render && b.render.sprite && b.render.sprite.texture) {
         const r = Math.max(4, (b.bounds.max.x - b.bounds.min.x)) * 0.08;
-        ctx.beginPath();
-        ctx.arc(b.position.x, b.position.y, r, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(0,0,0,0.6)';
-        ctx.fill();
+        ctx2d.beginPath();
+        ctx2d.arc(b.position.x, b.position.y, r, 0, Math.PI * 2);
+        ctx2d.fillStyle = 'rgba(0,0,0,0.6)';
+        ctx2d.fill();
       }
     });
-    ctx.restore();
+    ctx2d.restore();
   });
 
-  // ----- Keyboard tilt -----
+  // --- Keyboard tilt (arrows), G toggle, 0 reset ---
   let gx = 0, gy = 1;
-  document.addEventListener("keydown", function(event) {
-    const key = event.key.toLowerCase();
+  document.addEventListener('keydown', (e) => {
+    const key = e.key.toLowerCase();
     const step = 0.2;
     if (key === 'g') {
-      if (engine.world.gravity.y === 0 && engine.world.gravity.x === 0) {
+      if (engine.world.gravity.x === 0 && engine.world.gravity.y === 0) {
         engine.world.gravity.x = gx; engine.world.gravity.y = gy;
       } else {
         gx = engine.world.gravity.x; gy = engine.world.gravity.y;
         engine.world.gravity.x = 0; engine.world.gravity.y = 0;
       }
     }
-    if (event.key === 'ArrowLeft')  gx -= step;
-    if (event.key === 'ArrowRight') gx += step;
-    if (event.key === 'ArrowUp')    gy -= step;
-    if (event.key === 'ArrowDown')  gy += step;
+    if (e.key === 'ArrowLeft')  gx -= step;
+    if (e.key === 'ArrowRight') gx += step;
+    if (e.key === 'ArrowUp')    gy -= step;
+    if (e.key === 'ArrowDown')  gy += step;
     if (key === '0') { gx = 0; gy = 1; }
     engine.world.gravity.x = Math.max(-1, Math.min(1, gx));
     engine.world.gravity.y = Math.max(-1, Math.min(1, gy));
   });
 
-  // ----- Resize -----
+  // --- Resize ---
   window.addEventListener('resize', () => location.reload());
 </script>
 </body>
