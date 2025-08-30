@@ -45,13 +45,15 @@
     Runner.run(Runner.create(), engine);
 
     render.options.background = undefined;
+let t = 0;
 Matter.Events.on(render, 'beforeRender', () => {
-  const ctx = render.context;
-  const w = render.options.width;
-  const h = render.options.height;
+  t += 0.002; // animation speed
+  const ctx = render.context, w = render.options.width, h = render.options.height;
+  const top = `hsl(${(200 + 40*Math.sin(t))|0} 100% 97%)`;
+  const bottom = `hsl(${(190 + 40*Math.sin(t+1))|0} 80% 92%)`;
   const g = ctx.createLinearGradient(0, 0, 0, h);
-  g.addColorStop(0, '#f0f4ff');
-  g.addColorStop(1, '#e0f7fa');
+  g.addColorStop(0, top);
+  g.addColorStop(1, bottom);
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, w, h);
 });
