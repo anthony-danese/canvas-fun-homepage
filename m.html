@@ -37,30 +37,39 @@
     width: window.innerWidth,
     height: window.innerHeight,
     wireframes: false,
-    background: undefined   // <-- was '#ffffff'
+    background: undefined   // <<— was '#ffffff'
   }
 });
+
 
     Render.run(render);
     Runner.run(Runner.create(), engine);
 
     const Events = Matter.Events; // (optional alias)
 
-Events.on(render, 'beforeRender', () => {
+// Draw gradient background behind everything, every frame
+Matter.Events.on(render, 'afterRender', () => {
   const ctx = render.context;
-  const w = render.options.width;
-  const h = render.options.height;
+  const w = render.canvas.width;   // use canvas size to be safe
+  const h = render.canvas.height;
 
-  // example: soft vertical gradient
+  // Put what we draw BEHIND existing pixels
+  ctx.save();
+  ctx.globalCompositeOperation = 'destination-over';
+
+  // Example: soft vertical gradient
   const g = ctx.createLinearGradient(0, 0, 0, h);
   g.addColorStop(0, '#f0f4ff');
   g.addColorStop(1, '#e0f7fa');
 
-  ctx.save();
   ctx.fillStyle = g;
   ctx.fillRect(0, 0, w, h);
+
+  // Restore normal drawing mode
+  ctx.globalCompositeOperation = 'source-over';
   ctx.restore();
 });
+
 
     // Boundaries
     const width = render.options.width;
