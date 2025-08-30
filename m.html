@@ -44,6 +44,18 @@
     Render.run(render);
     Runner.run(Runner.create(), engine);
 
+    render.options.background = undefined;
+Matter.Events.on(render, 'beforeRender', () => {
+  const ctx = render.context;
+  const w = render.options.width;
+  const h = render.options.height;
+  const g = ctx.createLinearGradient(0, 0, 0, h);
+  g.addColorStop(0, '#f0f4ff');
+  g.addColorStop(1, '#e0f7fa');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, w, h);
+});
+
     // Boundaries
     const width = render.options.width;
     const height = render.options.height;
