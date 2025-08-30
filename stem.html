@@ -100,8 +100,8 @@
     return { total, widths };
   }
 
-  // --- Place name on the ground immediately ---
-  dropWord("Mr. Danese", W/2, 600);
+  // --- Drop Mr. Danese a bit higher (still below upper floor) ---
+  dropWord("Mr. Danese", W/2, H * 0.85);
 
   // --- Drop STEM + delayed i on upper floor ---
   const STEM_SIZE=100, STEM_SPACING=20;
