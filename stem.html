@@ -22,7 +22,7 @@
       width: window.innerWidth,
       height: window.innerHeight,
       wireframes: false,
-      background: '#ffffff'
+      background: undefined    // let us paint our own background
     }
   });
   Render.run(render);
@@ -30,6 +30,40 @@
 
   const W = render.options.width;
   const H = render.options.height;
+
+  // --- Background layers (Matter.js drawing, doesn't affect physics) ---
+  // Gradient behind everything
+  Events.on(render, 'afterRender', () => {
+    const ctx = render.context;
+    const w = render.canvas.width;
+    const h = render.canvas.height;
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'destination-over';
+    const g = ctx.createLinearGradient(0, 0, 0, h);
+    g.addColorStop(0, '#f0f4ff');
+    g.addColorStop(1, '#e0f7fa');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, h);
+    ctx.restore();
+  });
+
+  // Subtle vignette for contrast
+  Events.on(render, 'afterRender', () => {
+    const ctx = render.context;
+    const w = render.canvas.width;
+    const h = render.canvas.height;
+
+    ctx.save();
+    ctx.globalCompositeOperation = 'multiply';
+    const r = Math.hypot(w, h) * 0.6;
+    const vg = ctx.createRadialGradient(w/2, h/2, r*0.2, w/2, h/2, r);
+    vg.addColorStop(0, 'rgba(0,0,0,0)');
+    vg.addColorStop(1, 'rgba(0,0,0,0.12)');
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, 0, w, h);
+    ctx.restore();
+  });
 
   // --- Floors and walls ---
   const ground = Bodies.rectangle(W/2, H - 2, W + 160, 6, { isStatic: true, render: { fillStyle: '#000' }});
@@ -43,25 +77,42 @@
 
   Composite.add(engine.world, [ground, upperFloor, leftWall, rightWall, ceiling]);
 
-  // --- Utilities ---
+  // --- Utilities (bright colors + crisp outlined textures) ---
   function randColor() {
     const h = Math.floor(Math.random() * 360);
     return `hsl(${h} 90% 55%)`;
   }
+
   function textTexture(text, color, size, font) {
-    const cnv = document.createElement('canvas');
-    const ctx = cnv.getContext('2d');
-    ctx.font = `bold ${size}px ${font}`;
-    const w = Math.max(1, Math.ceil(ctx.measureText(text).width));
+    // measure first
+    const meas = document.createElement('canvas').getContext('2d');
+    meas.font = `bold ${size}px ${font}`;
+    const w = Math.max(1, Math.ceil(meas.measureText(text).width));
     const h = Math.max(1, Math.ceil(size * 1.1));
-    cnv.width = w; cnv.height = h;
-    const c2 = cnv.getContext('2d');
-    c2.font = `bold ${size}px ${font}`;
-    c2.textBaseline = 'alphabetic';
-    c2.fillStyle = color;
-    c2.fillText(text, 0, size*0.82);
+
+    // HiDPI for crisp edges
+    const ratio = Math.min(window.devicePixelRatio || 1, 2);
+    const cnv = document.createElement('canvas');
+    cnv.width = Math.ceil(w * ratio);
+    cnv.height = Math.ceil(h * ratio);
+
+    const ctx = cnv.getContext('2d');
+    ctx.scale(ratio, ratio);
+    ctx.font = `bold ${size}px ${font}`;
+    ctx.textBaseline = 'alphabetic';
+
+    // subtle outline for pop
+    ctx.lineWidth = Math.max(1, size / 18);
+    ctx.strokeStyle = 'rgba(0,0,0,0.22)';
+    ctx.strokeText(text, 0, size * 0.82);
+
+    // fill
+    ctx.fillStyle = color;
+    ctx.fillText(text, 0, size * 0.82);
+
     return cnv.toDataURL('image/png');
   }
+
   function createLetter(letter, x, y, size=100, font='Arial, sans-serif') {
     if (letter === ' ') return null;
     const color = randColor();
@@ -75,6 +126,7 @@
       render: { sprite: { texture: textTexture(letter, color, size, font) } }
     });
   }
+
   function measureWord(word, size=100, font='Arial, sans-serif', spacing=20) {
     const ctx = document.createElement('canvas').getContext('2d');
     ctx.font = `bold ${size}px ${font}`;
@@ -83,6 +135,7 @@
     const total = widths.reduce((a,b)=>a+b,0) + spacing*(letters.length-1);
     return { total, widths };
   }
+
   function dropWord(word, cx, yDrop, size=100, font='Arial, sans-serif', spacing=20) {
     const ctx = document.createElement('canvas').getContext('2d');
     ctx.font = `bold ${size}px ${font}`;
@@ -105,7 +158,7 @@
 
   // --- Drop STEM + delayed i on upper floor ---
   const STEM_SIZE=100, STEM_SPACING=20;
-  const { total: stemTotal, widths } = measureWord("STEM", STEM_SIZE, "Arial", STEM_SPACING);
+  const { total: stemTotal } = measureWord("STEM", STEM_SIZE, "Arial", STEM_SPACING);
 
   setTimeout(()=>{
     const stemCenterX=W/2;
@@ -122,20 +175,6 @@
   const mc=MouseConstraint.create(engine,{mouse,constraint:{stiffness:0.2,render:{visible:false}}});
   Composite.add(engine.world,mc);
   render.mouse=mouse;
-
-  // --- Trails ---
-  const ctx2d=render.context;
-  Events.on(render,'afterRender',()=>{
-    ctx2d.save(); ctx2d.globalAlpha=0.12;
-    engine.world.bodies.forEach(b=>{
-      if(b.render&&b.render.sprite&&b.render.sprite.texture){
-        const r=Math.max(4,(b.bounds.max.x-b.bounds.min.x))*0.08;
-        ctx2d.beginPath(); ctx2d.arc(b.position.x,b.position.y,r,0,Math.PI*2);
-        ctx2d.fillStyle='rgba(0,0,0,0.6)'; ctx2d.fill();
-      }
-    });
-    ctx2d.restore();
-  });
 
   // --- Keyboard tilt ---
   let gx=0,gy=1;
