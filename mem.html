@@ -27,7 +27,7 @@
       width: window.innerWidth,
       height: window.innerHeight,
       wireframes: false,
-      background: undefined   // let us paint our own background
+      background: undefined   // we paint our own background
     }
   });
 
@@ -80,14 +80,14 @@
   // --- Platforms ---
   let lines = [
     { text: "AP Physics C", y: 100 },
-    { text: "Mechanics &",    y: 200 },
-      { text: "Electricity and Magnetism",    y: 300 }
+    { text: "Mechanics &",  y: 200 },
+    { text: "Electricity and Magnetism", y: 300 }
   ];
   let linePadding = 70;
   let lineX = width / 2;
   let lineWidth = Math.min(width * 0.8, 1200);
 
-  let platformThickness = 5; // change to 2 if you want thinner lines
+  let platformThickness = 5; // set to 2 if you want thinner lines
   lines.forEach((line) => {
     const platform = Bodies.rectangle(
       lineX,
@@ -109,7 +109,7 @@
   // --- Letters ---
   function getRandomColor() {
     const h = Math.floor(Math.random() * 360);
-    return `hsl(${h} 90% 55%)`;
+    return `hsl(${h} 90% 55%)`; // vivid colors
   }
 
   function createTextTexture(text, color, size, family) {
@@ -128,6 +128,7 @@
     ctx.font = "bold " + size + "px " + family;
     ctx.textBaseline = "alphabetic";
 
+    // subtle outline
     ctx.lineWidth = Math.max(1, size / 18);
     ctx.strokeStyle = "rgba(0,0,0,0.22)";
     ctx.strokeText(text, 0, size * 0.82);
