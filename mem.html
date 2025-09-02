@@ -139,7 +139,7 @@
     return canvas.toDataURL("image/png");
   }
 
-  function createLetter(letter, x, y, size=64, font="Arial, sans-serif") {
+  function createLetter(letter, x, y, size=58, font="Arial, sans-serif") {
     if (letter === ' ') return null;
     const color = getRandomColor();
     const tempCtx = document.createElement("canvas").getContext("2d");
